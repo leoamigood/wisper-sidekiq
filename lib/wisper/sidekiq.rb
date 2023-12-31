@@ -13,9 +13,11 @@ module Wisper
     class Worker
       include ::Sidekiq::Worker
 
-      def perform(yml)
-        (subscriber, event, args) = ::YAML.load(yml)
-        subscriber.public_send(event, *args)
+      sidekiq_options queue: :events
+
+      def perform(json)
+        (subscriber, event, args) = ::JSON.load(json)
+        subscriber.constantize.public_send(event, *args)
       end
     end
 
@@ -32,7 +34,7 @@ module Wisper
 
       Worker.set(options).perform_in(
         schedule_options.fetch(:delay, 0),
-        ::YAML.dump([subscriber, event, args])
+        ::JSON.dump([subscriber, event, args])
       )
     end
 
