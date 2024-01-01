@@ -17,7 +17,7 @@ module Wisper
 
       def perform(json)
         (subscriber, event, args) = ::JSON.load(json)
-        subscriber.constantize.public_send(event, *args)
+        subscriber.constantize.public_send(event, *args) if args[0]['workflows'].include?(subscriber.constantize.workflow.to_s)
       end
     end
 
