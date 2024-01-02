@@ -13,11 +13,17 @@ module Wisper
     class Worker
       include ::Sidekiq::Worker
 
-      sidekiq_options queue: :events
+      sidekiq_options queue: ENV.fetch('EVENTS_QUEUE', :default)
 
       def perform(json)
         (subscriber, event, args) = ::JSON.load(json)
-        subscriber.constantize.public_send(event, *args) if args[0]['workflows'].include?(subscriber.constantize.workflow.to_s)
+
+        workflow = args[0]['workflow']
+        if workflow.present?
+          subscriber.constantize.public_send(event, *args) if subscriber.constantize.consumes?(workflow, event)
+        else
+          subscriber.constantize.public_send(event, *args)
+        end
       end
     end
 
